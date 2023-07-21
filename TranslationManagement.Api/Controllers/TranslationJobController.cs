@@ -77,7 +77,7 @@ namespace TranslationManagement.Api.Controllers
             return Ok();
         }
 
-        [HttpPost]
+        [HttpGet]
         [Route("GetTranslatorJobs")]
         public async Task<ActionResult> GetTranslatorJobsById(int translatorId)
         {
