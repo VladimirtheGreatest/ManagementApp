@@ -24,6 +24,59 @@ namespace TranslationManagement.Repository
                 throw; // Rethrow the exception to propagate it
             }
         }
+        public void RemoveMultiple(IEnumerable<T> entities) => _context.RemoveRange(entities);
+
+  public void CommitIsolatedTransactionForEntity(Action methodToExecute)
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+             strategy.Execute( () =>
+            {
+                //start a transaction with the higher isolation level
+                using (var dbContextTransaction = _context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                {
+                    try
+                    {
+                        methodToExecute();
+                        // run the insert statement
+                        _context.SaveChanges();
+                        //commit the transaction
+                        dbContextTransaction.Commit();
+                    }
+                    catch
+                    {
+                        //roll back the transaction if anything went wrong so that your database isn't locked
+                        dbContextTransaction.Rollback();
+                        throw;
+                    }
+                }
+            });
+        }
+
+        public async Task CommitIsolatedTransactionForEntityFuncAsync(Func<Task> methodToExecute)
+        {
+            var strategy = _context.Database.CreateExecutionStrategy();
+            await strategy.ExecuteAsync(async () =>
+            {
+                //start a transaction with the higher isolation level
+                using (var dbContextTransaction = _context.Database.BeginTransaction(System.Data.IsolationLevel.Serializable))
+                {
+                    try
+                    {
+                        await methodToExecute();
+                        // run the insert statement
+                        await _context.SaveChangesAsync();
+                        //commit the transaction
+                        dbContextTransaction.Commit();
+                    }
+                    catch
+                    {
+                        //roll back the transaction if anything went wrong so that your database isn't locked
+                        dbContextTransaction.Rollback();
+                        throw;
+                    }
+                }
+            });
+        }
 
     }
 }
